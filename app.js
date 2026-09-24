@@ -51,8 +51,6 @@ const DEFAULT_WORDS = [
   "Qué boleta"
 ];
 
-const MIN_WORDS_TO_PLAY = 16;
-
 // Estado global de la aplicación
 const AppState = {
   gridSize: 4,
@@ -85,25 +83,6 @@ const STORAGE_KEYS = {
 };
 
 /* ==========================================
-   ICONOS (sprite SVG definido en index.html)
-========================================== */
-function icon(name) {
-  return `<svg class="icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-${name}"/></svg>`;
-}
-
-const TOAST_ICONS = {
-  success: "check",
-  error: "alert",
-  info: "info"
-};
-
-const CHAT_TYPE_ICONS = {
-  system: "info",
-  game_event: "target",
-  bingo_alert: "trophy"
-};
-
-/* ==========================================
    SISTEMA DE AUDIO CON WEB AUDIO API
 ========================================== */
 function getAudioContext() {
@@ -124,20 +103,20 @@ function playStampSound() {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
-
+    
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
+    
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(320, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.12);
-
+    
     gain.gain.setValueAtTime(0.4, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-
+    
     osc.connect(gain);
     gain.connect(ctx.destination);
-
+    
     osc.start();
     osc.stop(ctx.currentTime + 0.13);
   } catch (e) {
@@ -156,17 +135,17 @@ function playBingoFanfare() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       const startTime = ctx.currentTime + idx * 0.08;
-
+      
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, startTime);
-
+      
       gain.gain.setValueAtTime(0, startTime);
       gain.gain.linearRampToValueAtTime(0.3, startTime + 0.03);
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
-
+      
       osc.connect(gain);
       gain.connect(ctx.destination);
-
+      
       osc.start(startTime);
       osc.stop(startTime + 0.46);
     });
@@ -206,18 +185,15 @@ function initApp() {
   loadStoredPreferences();
   setupEventListeners();
   setupSocket();
-  setupPWA();
   fetchTunnelStatus();
   renderWordPoolModal();
-
+  
   if (AppState.board && AppState.board.length === AppState.gridSize * AppState.gridSize) {
     renderGrid();
     checkWinningConditions(false);
   } else {
-    generateNewCard(false);
+    generateNewCard();
   }
-
-  dealInCells();
 
   // Si había una sala previa guardada, autoconectar
   if (AppState.currentRoom && AppState.nickname && AppState.socket) {
@@ -247,8 +223,8 @@ function loadStoredPreferences() {
   const savedSound = localStorage.getItem(STORAGE_KEYS.SOUND);
   if (savedSound !== null) {
     AppState.soundEnabled = savedSound === "true";
+    updateSoundButtonUI();
   }
-  updateSoundButtonUI();
 
   AppState.nickname = localStorage.getItem(STORAGE_KEYS.NICKNAME) || "";
   AppState.currentRoom = localStorage.getItem(STORAGE_KEYS.ROOM) || "";
@@ -305,14 +281,14 @@ function setupSocket() {
       AppState.nickname = data.nickname;
       saveState();
       updateMultiplayerUI();
-
+      
       // Limpiar y renderizar historial previo del chat
       const chatContainer = document.getElementById("chatMessages");
       if (chatContainer && data.history) {
         chatContainer.innerHTML = "";
         data.history.forEach(msg => appendChatMessage(msg));
       }
-      showToast(`Conectado a la sala ${data.room}`, "success");
+      showToast(`🟢 Conectado a la sala: ${data.room}`);
     });
 
     AppState.socket.on('room_users', (users) => {
@@ -322,7 +298,7 @@ function setupSocket() {
 
     AppState.socket.on('chat_message', (msg) => {
       appendChatMessage(msg);
-
+      
       // Si el chat está cerrado y no es mensaje propio, sumar notificación
       if (!AppState.chatOpen && !AppState.stealthMode) {
         if (msg.type !== 'system' && msg.sender !== AppState.nickname) {
@@ -367,20 +343,20 @@ function renderTunnelUI(data) {
 
   if (data.starting) {
     badge.className = "tunnel-badge starting";
-    badge.innerHTML = `${icon("loader")} Conectando con Cloudflare...`;
-    detail.textContent = "Generando tu enlace seguro para amigos (suele tardar entre 5 y 10 segundos).";
+    badge.textContent = "⏳ Conectando con Cloudflare...";
+    detail.textContent = "Generando tu enlace seguro para amigos (suele tardar 5-10s)...";
     toggleBtn.className = "btn btn-tunnel-loading";
-    toggleBtn.innerHTML = `${icon("loader")} Conectando...`;
+    toggleBtn.textContent = "⏳ Conectando...";
     toggleBtn.disabled = true;
     if (linkRow) linkRow.classList.add("hidden");
   } else if (data.active && data.url) {
     badge.className = "tunnel-badge active";
-    badge.innerHTML = `${icon("globe")} Enlace público activo`;
-    detail.textContent = "Tus amigos pueden entrar con este enlace seguro (tu IP queda oculta).";
+    badge.textContent = "🌐 Enlace Público Activo";
+    detail.textContent = "Tus amigos pueden entrar con este enlace seguro (tu IP está 100% oculta)";
     toggleBtn.className = "btn btn-tunnel-stop";
-    toggleBtn.innerHTML = `${icon("lock")} Cerrar enlace público`;
+    toggleBtn.textContent = "🛑 Cerrar Enlace Público (Volver a Solo Local)";
     toggleBtn.disabled = false;
-
+    
     if (linkRow) {
       linkRow.classList.remove("hidden");
       if (input) input.value = data.url;
@@ -388,10 +364,10 @@ function renderTunnelUI(data) {
     }
   } else {
     badge.className = "tunnel-badge local";
-    badge.innerHTML = `${icon("lock")} Solo local (privado)`;
-    detail.textContent = "Solo tú puedes jugar en este equipo (localhost:3000).";
+    badge.textContent = "🔒 Modo Solo Local (Privado)";
+    detail.textContent = "Solo tú puedes jugar en este equipo (localhost:3000)";
     toggleBtn.className = "btn btn-tunnel-start";
-    toggleBtn.innerHTML = `${icon("arrow-up-right")} Abrir enlace para amigos`;
+    toggleBtn.textContent = "🚀 Abrir Enlace para Amigos";
     toggleBtn.disabled = false;
     if (linkRow) linkRow.classList.add("hidden");
   }
@@ -400,7 +376,7 @@ function renderTunnelUI(data) {
 async function toggleTunnel() {
   const toggleBtn = document.getElementById("toggleTunnelBtn");
   if (AppState.tunnelState && AppState.tunnelState.active) {
-    showToast("Cerrando enlace público...", "info");
+    showToast("🛑 Cerrando enlace público...");
     if (toggleBtn) {
       toggleBtn.disabled = true;
       toggleBtn.textContent = "Cerrando...";
@@ -409,35 +385,35 @@ async function toggleTunnel() {
       const res = await fetch('/api/tunnel/stop', { method: 'POST' });
       const data = await res.json();
       renderTunnelUI(data);
-      showToast("Enlace cerrado. El juego vuelve a ser solo local.", "success");
+      showToast("🔒 Enlace cerrado. Ahora el juego es solo local.");
     } catch (err) {
-      showToast("No se pudo cerrar el enlace", "error");
+      showToast("⚠️ Error al cerrar enlace");
     } finally {
       if (toggleBtn) toggleBtn.disabled = false;
     }
   } else {
-    showToast("Conectando el túnel seguro de Cloudflare...", "info");
+    showToast("🚀 Conectando túnel seguro de Cloudflare...");
     renderTunnelUI({ starting: true });
     try {
       const res = await fetch('/api/tunnel/start', { method: 'POST' });
       const data = await res.json();
       if (data.success && data.url) {
         renderTunnelUI(data);
-        showToast("Enlace público listo. Cópialo para tus amigos.", "success");
+        showToast("✅ ¡Enlace público listo! Cópialo para tus amigos.");
       } else {
         renderTunnelUI({ active: false, starting: false });
-        showToast("No se pudo generar el enlace. " + (data.error || "Inténtalo de nuevo."), "error");
+        showToast("⚠️ No se pudo generar el enlace: " + (data.error || "Reintenta"));
       }
     } catch (err) {
       renderTunnelUI({ active: false, starting: false });
-      showToast("Error al conectar el túnel", "error");
+      showToast("⚠️ Error al conectar túnel");
     }
   }
 }
 
 function joinRoom(room, nickname) {
   if (!AppState.socket) {
-    showToast("El servidor multijugador no está conectado", "error");
+    showToast("⚠️ Servidor multijugador no conectado");
     return;
   }
   AppState.socket.emit('join_room', { room, nickname });
@@ -454,10 +430,7 @@ function updateMultiplayerUI() {
       statusDot.className = "status-dot online";
     }
     if (statusText) {
-      statusText.textContent = "";
-      const roomStrong = document.createElement("strong");
-      roomStrong.textContent = AppState.currentRoom;
-      statusText.append("Sala: ", roomStrong, ` (${AppState.nickname})`);
+      statusText.innerHTML = `Sala: <strong>${AppState.currentRoom}</strong> (${AppState.nickname})`;
     }
     if (roomUsersBadge) {
       roomUsersBadge.classList.remove("hidden");
@@ -470,7 +443,7 @@ function updateMultiplayerUI() {
       statusDot.className = "status-dot offline";
     }
     if (statusText) {
-      statusText.textContent = "Modo solitario";
+      statusText.textContent = "Modo Solitario";
     }
     if (roomUsersBadge) {
       roomUsersBadge.classList.add("hidden");
@@ -481,7 +454,7 @@ function updateMultiplayerUI() {
 function updateOnlineUsersUI() {
   const countEl = document.getElementById("onlineCount");
   const listEl = document.getElementById("chatOnlineList");
-
+  
   if (countEl) countEl.textContent = AppState.onlineUsers.length;
   if (listEl) {
     if (AppState.onlineUsers.length === 0) {
@@ -502,24 +475,14 @@ function appendChatMessage(msg) {
   if (msg.type === 'user') {
     const isMine = msg.sender === AppState.nickname;
     msgEl.classList.add(isMine ? 'mine' : 'theirs');
-
-    if (isMine) {
-      msgEl.innerHTML = `
-        <div class="chat-text">${escapeHtml(msg.text)}</div>
-        <div class="chat-meta">${escapeHtml(msg.time || "")}</div>
-      `;
-    } else {
-      msgEl.innerHTML = `
-        <div class="chat-sender">
-          <span>${escapeHtml(msg.sender || "")}</span>
-          <span class="chat-time">${escapeHtml(msg.time || "")}</span>
-        </div>
-        <div class="chat-text">${escapeHtml(msg.text)}</div>
-      `;
-    }
+    
+    msgEl.innerHTML = `
+      ${!isMine ? `<div class="chat-sender">${escapeHtml(msg.sender)} <span class="chat-time">${msg.time}</span></div>` : ''}
+      <div class="chat-text">${escapeHtml(msg.text)}</div>
+      ${isMine ? `<div style="text-align:right; font-size:0.65rem; opacity:0.7;">${msg.time}</div>` : ''}
+    `;
   } else {
-    const typeIcon = CHAT_TYPE_ICONS[msg.type] || "info";
-    msgEl.innerHTML = `${icon(typeIcon)}<span>${escapeHtml(msg.text)}</span>`;
+    msgEl.innerHTML = `<span>${msg.text}</span>`;
   }
 
   container.appendChild(msgEl);
@@ -529,8 +492,8 @@ function appendChatMessage(msg) {
 function sendChatMessage(text) {
   if (!text || !text.trim()) return;
   if (!AppState.currentRoom) {
-    showToast("Primero únete a una sala para chatear", "error");
-    openModal(document.getElementById("roomModal"));
+    showToast("⚠️ Primero únete a una sala para chatear");
+    document.getElementById("roomModal")?.classList.remove("hidden");
     return;
   }
   if (AppState.socket) {
@@ -562,7 +525,7 @@ function shuffle(array) {
   return arr;
 }
 
-function generateNewCard(useTransition = true) {
+function generateNewCard() {
   const totalCells = AppState.gridSize * AppState.gridSize;
   const is5x5 = AppState.gridSize === 5;
   const neededWords = is5x5 ? totalCells - 1 : totalCells;
@@ -580,7 +543,7 @@ function generateNewCard(useTransition = true) {
     if (is5x5 && i === 12) {
       newBoard.push({
         id: i,
-        text: "El profe empieza a hablar",
+        text: "¡PROFE COMIENZA A HABLAR!",
         isFree: true,
         isMarked: true
       });
@@ -597,12 +560,8 @@ function generateNewCard(useTransition = true) {
   AppState.board = newBoard;
   AppState.wonLines = [];
   saveState();
-  if (useTransition) {
-    withCardTransition(() => renderGrid());
-  } else {
-    renderGrid();
-  }
-  showToast("Nuevo cartón barajado", "info");
+  renderGrid();
+  showToast("🎲 ¡Nuevo cartón barajado!");
 }
 
 function resetBoardMarks() {
@@ -614,7 +573,7 @@ function resetBoardMarks() {
   AppState.wonLines = [];
   saveState();
   renderGrid();
-  showToast("Marcas limpiadas", "info");
+  showToast("🧹 Marcas limpiadas");
 }
 
 /* ==========================================
@@ -629,22 +588,20 @@ function renderGrid() {
 
   AppState.board.forEach((cell, index) => {
     const cellEl = document.createElement("button");
-    cellEl.type = "button";
     cellEl.className = "bingo-cell";
     cellEl.dataset.index = index;
     cellEl.setAttribute("aria-label", cell.text);
-    cellEl.setAttribute("aria-pressed", cell.isMarked ? "true" : "false");
 
     if (cell.isFree) cellEl.classList.add("cell-free");
     if (cell.isMarked) cellEl.classList.add("is-marked");
 
-    let contentHtml = `<span class="bingo-cell-text">${escapeHtml(cell.text)}</span>`;
-    if (cell.isFree) contentHtml = `<span class="free-icon" aria-hidden="true">${icon("star")}</span>` + contentHtml;
+    let contentHtml = `<span class="bingo-cell-text">${cell.text}</span>`;
+    if (cell.isFree) contentHtml = `<span class="free-icon">🌟</span>` + contentHtml;
 
     if (cell.isMarked) {
-      const stampText = cell.isFree ? "Libre" : "Cazada";
+      const stampText = cell.isFree ? "GRATIS" : "CAZADA";
       contentHtml += `
-        <div class="stamp-mark" aria-hidden="true">
+        <div class="stamp-mark">
           <div class="stamp-inner">${stampText}</div>
         </div>
       `;
@@ -663,7 +620,7 @@ function handleCellClick(index) {
   if (!cell) return;
 
   if (cell.isFree) {
-    showToast("Esta es tu casilla libre", "info");
+    showToast("⭐ Esta es tu casilla gratis");
     return;
   }
 
@@ -671,8 +628,7 @@ function handleCellClick(index) {
 
   if (cell.isMarked) {
     playStampSound();
-    buzz(25);
-
+    
     // Si estamos en multijugador, avisar a los amigos
     if (AppState.socket && AppState.currentRoom) {
       const markedCount = AppState.board.filter(c => c.isMarked && !c.isFree).length;
@@ -714,12 +670,12 @@ function checkWinningConditions(triggerCelebration = true) {
   // Diagonal 1
   const diag1 = [];
   for (let i = 0; i < size; i++) diag1.push(i * size + i);
-  winningPatterns.push({ id: "diag-1", name: "Diagonal principal", cells: diag1 });
+  winningPatterns.push({ id: "diag-1", name: "Diagonal Principal ↘", cells: diag1 });
 
   // Diagonal 2
   const diag2 = [];
   for (let i = 0; i < size; i++) diag2.push(i * size + (size - 1 - i));
-  winningPatterns.push({ id: "diag-2", name: "Diagonal inversa", cells: diag2 });
+  winningPatterns.push({ id: "diag-2", name: "Diagonal Inversa ↗", cells: diag2 });
 
   const completedPatterns = [];
   const winningCellIndices = new Set();
@@ -746,9 +702,9 @@ function checkWinningConditions(triggerCelebration = true) {
   if (completedCountEl) completedCountEl.textContent = completedPatterns.length;
 
   const newlyWon = completedPatterns.filter(p => !AppState.wonLines.includes(p.id));
-  newlyWon.forEach(p => AppState.wonLines.push(p.id));
 
   if (newlyWon.length > 0 && triggerCelebration) {
+    newlyWon.forEach(p => AppState.wonLines.push(p.id));
     celebrateWin(newlyWon[0].name);
 
     // Notificar en la sala
@@ -758,14 +714,12 @@ function checkWinningConditions(triggerCelebration = true) {
   }
 
   const allMarked = board.every(c => c.isMarked);
-  if (allMarked && !AppState.wonLines.includes("full-board")) {
+  if (allMarked && !AppState.wonLines.includes("full-board") && triggerCelebration) {
     AppState.wonLines.push("full-board");
-    if (triggerCelebration) {
-      celebrateWin("cartón lleno");
-
-      if (AppState.socket && AppState.currentRoom) {
-        AppState.socket.emit('player_bingo', { reason: "cartón lleno" });
-      }
+    celebrateWin("¡¡CARTÓN LLENO / BLACKOUT!!");
+    
+    if (AppState.socket && AppState.currentRoom) {
+      AppState.socket.emit('player_bingo', { reason: "CARTÓN LLENO" });
     }
   }
 }
@@ -773,21 +727,19 @@ function checkWinningConditions(triggerCelebration = true) {
 function celebrateWin(reason) {
   playBingoFanfare();
   launchConfetti();
-  buzz([80, 40, 80, 40, 160]);
-  speak("¡Bingo!");
-
+  
   const modal = document.getElementById("winModal");
   const winDesc = document.getElementById("winDescription");
   const winDetails = document.getElementById("winDetails");
 
-  if (winDesc) winDesc.textContent = `Has completado: ${reason}.`;
-
+  if (winDesc) winDesc.textContent = `¡Has completado: ${reason}!`;
+  
   const markedWords = AppState.board.filter(c => c.isMarked && !c.isFree).map(c => `• ${c.text}`);
   if (winDetails) {
-    winDetails.innerHTML = `<strong>Expresiones cazadas:</strong><br>${markedWords.slice(0, 8).map(escapeHtml).join("<br>")}${markedWords.length > 8 ? "<br><em>...y más</em>" : ""}`;
+    winDetails.innerHTML = `<strong>Expresiones cazadas:</strong><br>${markedWords.slice(0, 8).join("<br>")}${markedWords.length > 8 ? "<br><em>...y más!</em>" : ""}`;
   }
 
-  openModal(modal);
+  if (modal) modal.classList.remove("hidden");
 }
 
 /* ==========================================
@@ -796,7 +748,7 @@ function celebrateWin(reason) {
 function updateDashboardStats() {
   const marked = AppState.board.filter(c => c.isMarked && !c.isFree).length;
   const total = AppState.board.length;
-
+  
   const markedEl = document.getElementById("markedCount");
   const totalEl = document.getElementById("totalCells");
   const wordCountHeaderEl = document.getElementById("totalWordPoolCount");
@@ -822,9 +774,7 @@ function renderWordPoolModal() {
     pill.className = "word-tag";
     pill.innerHTML = `
       <span>${escapeHtml(word)}</span>
-      <button class="tag-delete-btn" title="Eliminar ${escapeHtml(word)}" aria-label="Eliminar ${escapeHtml(word)}">
-        ${icon("trash")}
-      </button>
+      <button class="tag-delete-btn" title="Eliminar">&times;</button>
     `;
 
     pill.querySelector(".tag-delete-btn").addEventListener("click", () => {
@@ -840,7 +790,7 @@ function addWordToPool(newWord) {
   if (!cleanWord) return;
 
   if (AppState.wordPool.some(w => w.toLowerCase() === cleanWord.toLowerCase())) {
-    showToast("Esa expresión ya está en la lista", "error");
+    showToast("⚠️ Esa expresión ya está en la lista");
     return;
   }
 
@@ -848,19 +798,19 @@ function addWordToPool(newWord) {
   saveState();
   renderWordPoolModal();
   updateDashboardStats();
-  showToast(`"${cleanWord}" añadida a la lista`, "success");
+  showToast(`✅ "${cleanWord}" añadida a la lista`);
 }
 
 function removeWordFromPool(index) {
-  if (AppState.wordPool.length <= MIN_WORDS_TO_PLAY) {
-    showToast(`Necesitas al menos ${MIN_WORDS_TO_PLAY} palabras para jugar`, "error");
+  if (AppState.wordPool.length <= 16) {
+    showToast("⚠️ Necesitas al menos 16 palabras para jugar");
     return;
   }
   const removed = AppState.wordPool.splice(index, 1);
   saveState();
   renderWordPoolModal();
   updateDashboardStats();
-  showToast(`"${removed[0]}" eliminada de la lista`, "info");
+  showToast(`🗑️ "${removed}" eliminada`);
 }
 
 function resetWordPoolToDefault() {
@@ -868,151 +818,7 @@ function resetWordPoolToDefault() {
   saveState();
   renderWordPoolModal();
   updateDashboardStats();
-  showToast("Lista restaurada por defecto", "success");
-}
-
-/* ==========================================
-   GESTIÓN DE MODALES (dialog nativo del navegador)
-========================================== */
-function openModal(modal) {
-  if (!modal) return;
-  if (typeof modal.showModal === "function") {
-    if (!modal.open) modal.showModal();
-  } else {
-    modal.setAttribute("open", "");
-  }
-}
-
-function closeModal(modal) {
-  if (!modal) return;
-  if (typeof modal.close === "function") {
-    if (modal.open) modal.close();
-  } else {
-    modal.removeAttribute("open");
-  }
-}
-
-/* ==========================================
-   EXTRAS MODERNOS: transiciones, animaciones,
-   vibración, voz, compartir nativo y PWA
-========================================== */
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-// View Transitions API: el cartón se transforma suavemente al barajar o cambiar de tamaño
-function withCardTransition(fn) {
-  if (typeof document.startViewTransition === "function" && !prefersReducedMotion()) {
-    document.startViewTransition(fn);
-  } else {
-    fn();
-  }
-}
-
-// Web Animations API: reparto escalonado de las casillas al abrir la app
-function dealInCells() {
-  if (prefersReducedMotion()) return;
-  document.querySelectorAll(".bingo-cell").forEach((el, idx) => {
-    el.animate(
-      [
-        { opacity: 0, transform: "translateY(14px) scale(0.94)" },
-        { opacity: 1, transform: "none" }
-      ],
-      {
-        duration: 340,
-        delay: idx * 16,
-        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-        fill: "backwards"
-      }
-    );
-  });
-}
-
-// Vibration API: pequeña vibración al sellar y fanfarria háptica al cantar bingo
-function buzz(pattern) {
-  if (!AppState.soundEnabled) return;
-  if (navigator.vibrate) navigator.vibrate(pattern);
-}
-
-// Speech Synthesis API: el móvil canta el BINGO en voz alta
-function speak(text) {
-  if (!AppState.soundEnabled || !("speechSynthesis" in window)) return;
-  try {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "es-ES";
-    utterance.rate = 1.05;
-    utterance.pitch = 1.1;
-    const spanishVoice = window.speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith("es"));
-    if (spanishVoice) utterance.voice = spanishVoice;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    // Sin voz disponible: no pasa nada
-  }
-}
-
-// Easter egg: escribe "bingo" (o doble toca el título) para el modo fiesta
-function partyMode() {
-  const grid = document.getElementById("bingoGrid");
-  if (grid && !prefersReducedMotion()) {
-    grid.classList.add("party");
-    setTimeout(() => grid.classList.remove("party"), 1600);
-  }
-  launchConfetti();
-  speak("¡Bingo!");
-  showToast("Modo fiesta desbloqueado", "success");
-}
-
-// Web Share API con caída al portapapeles
-async function shareResults() {
-  const text = generateShareText();
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "Bingo del Profe", text });
-      showToast("Resultado compartido", "success");
-      return;
-    } catch (err) {
-      if (err && err.name === "AbortError") return;
-      // Si falla, se intenta el portapapeles
-    }
-  }
-  copyShareResults();
-}
-
-// PWA: service worker para jugar sin conexión + botón de instalación
-function setupPWA() {
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {
-        // En http:// sin TLS el registro no está disponible: modo normal
-      });
-    });
-  }
-
-  const installBtn = document.getElementById("installAppBtn");
-  let deferredPrompt = null;
-
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn) installBtn.classList.remove("hidden");
-  });
-
-  if (installBtn) {
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBtn.classList.add("hidden");
-      showToast(choice && choice.outcome === "accepted" ? "Instalando el Bingo..." : "Instalación cancelada", "info");
-    });
-  }
-
-  window.addEventListener("appinstalled", () => {
-    if (installBtn) installBtn.classList.add("hidden");
-    showToast("App instalada. Ya puedes jugar sin conexión.", "success");
-  });
+  showToast("🔄 Lista restaurada por defecto");
 }
 
 /* ==========================================
@@ -1028,63 +834,37 @@ function toggleStealthMode(forceState) {
   if (AppState.stealthMode) {
     stealthEl.classList.remove("hidden");
     document.title = "Apuntes_Clase_Tema_4_Metodologia.docx";
+    // Esconder el chat inmediatamente
     if (chatDrawer) chatDrawer.classList.add("hidden");
-    updateChatToggleUI();
   } else {
     stealthEl.classList.add("hidden");
     document.title = "Bingo del Profe - Edición Expresiones Latinas";
     if (AppState.chatOpen && chatDrawer) {
       chatDrawer.classList.remove("hidden");
     }
-    updateChatToggleUI();
   }
-}
-
-/* ==========================================
-   CHAT: ABRIR / CERRAR
-========================================== */
-function updateChatToggleUI() {
-  const btn = document.getElementById("chatToggleBtn");
-  if (btn) btn.setAttribute("aria-expanded", AppState.chatOpen ? "true" : "false");
-}
-
-function toggleChat(forceOpen) {
-  const chatDrawer = document.getElementById("chatDrawer");
-  if (!chatDrawer) return;
-
-  AppState.chatOpen = forceOpen !== undefined ? forceOpen : !AppState.chatOpen;
-
-  if (AppState.chatOpen) {
-    chatDrawer.classList.remove("hidden");
-    AppState.unreadChatCount = 0;
-    updateChatBadge();
-    document.getElementById("chatInput")?.focus();
-  } else {
-    chatDrawer.classList.add("hidden");
-  }
-  updateChatToggleUI();
 }
 
 /* ==========================================
    COMPARTIR RESULTADOS (WHATSAPP / PORTAPAPELES)
-========================================== */
+========================================= */
 function generateShareText() {
   const markedCells = AppState.board.filter(c => c.isMarked && !c.isFree);
   const completedLinesCount = document.getElementById("completedLines")?.textContent || "0";
-
-  let text = `*BINGO DEL PROFE*\n`;
+  
+  let text = `🎯 *¡BINGO DEL PROFE!* 👨‍🏫\n`;
   if (AppState.currentRoom) {
     text += `Sala: ${AppState.currentRoom}\n`;
   }
-  text += `Líneas conseguidas: ${completedLinesCount}\n`;
+  text += `Líneas conseguidas: ${completedLinesCount} 🏆\n`;
   text += `Palabras cazadas hoy en clase:\n`;
-
+  
   markedCells.forEach(c => {
     text += `• ${c.text}\n`;
   });
-
+  
   text += `\nTotal cazadas: ${markedCells.length}/${AppState.board.length}\n`;
-  text += `¡A ver quién completa el cartón primero!`;
+  text += `¡A ver quién completa el cartón primero! 😂`;
   return text;
 }
 
@@ -1092,7 +872,7 @@ function copyShareResults() {
   const text = generateShareText();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast("Copiado al portapapeles. Pégalo en WhatsApp.", "success");
+      showToast("📋 ¡Copiado al portapapeles! Pégalo en WhatsApp");
     }).catch(() => {
       prompt("Copia tu resultado para WhatsApp:", text);
     });
@@ -1113,7 +893,7 @@ function launchConfetti() {
   canvas.height = window.innerHeight;
 
   const particles = [];
-  const colors = ["#f2a93b", "#dc4640", "#3cc492", "#6aa3e8", "#e8873f", "#c9a2e8", "#ffd489"];
+  const colors = ["#f59e0b", "#ec4899", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6", "#fbbf24"];
 
   for (let i = 0; i < 90; i++) {
     particles.push({
@@ -1168,23 +948,22 @@ function launchConfetti() {
    TOAST NOTIFICACIONES
 ========================================== */
 let toastTimeout;
-function showToast(msg, type = "info") {
+function showToast(msg) {
   const toast = document.getElementById("toast");
   if (!toast) return;
 
-  const toastType = TOAST_ICONS[type] ? type : "info";
-  toast.className = `toast ${toastType}`;
-  toast.innerHTML = `${icon(TOAST_ICONS[toastType])}<span>${escapeHtml(msg)}</span>`;
+  toast.textContent = msg;
+  toast.classList.remove("hidden");
 
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => {
     toast.classList.add("hidden");
-  }, 2600);
+  }, 2400);
 }
 
 function escapeHtml(text) {
   const div = document.createElement("div");
-  div.textContent = text ?? "";
+  div.textContent = text;
   return div.innerHTML;
 }
 
@@ -1224,7 +1003,7 @@ function setupEventListeners() {
       AppState.soundEnabled = !AppState.soundEnabled;
       updateSoundButtonUI();
       saveState();
-      showToast(AppState.soundEnabled ? "Sonido activado" : "Sonido silenciado", "info");
+      showToast(AppState.soundEnabled ? "🔊 Sonido activado" : "🔇 Sonido silenciado");
     });
   }
 
@@ -1258,25 +1037,6 @@ function setupEventListeners() {
     }
   });
 
-  // Easter egg: escribir "bingo" en cualquier momento
-  let typedBuffer = "";
-  window.addEventListener("keydown", (e) => {
-    const activeTag = document.activeElement ? document.activeElement.tagName : "";
-    if (activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT") return;
-    if (e.key.length !== 1) return;
-    typedBuffer = (typedBuffer + e.key.toLowerCase()).slice(-6);
-    if (typedBuffer.includes("bingo")) {
-      typedBuffer = "";
-      partyMode();
-    }
-  });
-
-  // Easter egg táctil: doble toque al título
-  const appTitleEl = document.querySelector(".app-title");
-  if (appTitleEl) {
-    appTitleEl.addEventListener("dblclick", partyMode);
-  }
-
   // Modal Multijugador
   const openRoomModalBtn = document.getElementById("openRoomModalBtn");
   const roomModal = document.getElementById("roomModal");
@@ -1289,18 +1049,12 @@ function setupEventListeners() {
     openRoomModalBtn.addEventListener("click", () => {
       if (nicknameInput && AppState.nickname) nicknameInput.value = AppState.nickname;
       if (roomCodeInput && AppState.currentRoom) roomCodeInput.value = AppState.currentRoom;
-      openModal(roomModal);
+      roomModal.classList.remove("hidden");
     });
   }
 
   if (closeRoomModalBtn && roomModal) {
-    closeRoomModalBtn.addEventListener("click", () => closeModal(roomModal));
-  }
-
-  if (roomModal) {
-    roomModal.addEventListener("click", (e) => {
-      if (e.target === roomModal) closeModal(roomModal);
-    });
+    closeRoomModalBtn.addEventListener("click", () => roomModal.classList.add("hidden"));
   }
 
   if (joinRoomForm) {
@@ -1311,21 +1065,35 @@ function setupEventListeners() {
 
       if (nick && code) {
         joinRoom(code, nick);
-        closeModal(roomModal);
+        roomModal.classList.add("hidden");
       }
     });
   }
 
   // Toggle Drawer del Chat
   const chatToggleBtn = document.getElementById("chatToggleBtn");
+  const chatDrawer = document.getElementById("chatDrawer");
   const closeChatBtn = document.getElementById("closeChatBtn");
 
-  if (chatToggleBtn) {
-    chatToggleBtn.addEventListener("click", () => toggleChat());
+  if (chatToggleBtn && chatDrawer) {
+    chatToggleBtn.addEventListener("click", () => {
+      AppState.chatOpen = !AppState.chatOpen;
+      if (AppState.chatOpen) {
+        chatDrawer.classList.remove("hidden");
+        AppState.unreadChatCount = 0;
+        updateChatBadge();
+        document.getElementById("chatInput")?.focus();
+      } else {
+        chatDrawer.classList.add("hidden");
+      }
+    });
   }
 
-  if (closeChatBtn) {
-    closeChatBtn.addEventListener("click", () => toggleChat(false));
+  if (closeChatBtn && chatDrawer) {
+    closeChatBtn.addEventListener("click", () => {
+      AppState.chatOpen = false;
+      chatDrawer.classList.add("hidden");
+    });
   }
 
   // Formulario del Chat
@@ -1343,13 +1111,12 @@ function setupEventListeners() {
     });
   }
 
-  // Frases rápidas del chat
-  const phraseButtons = document.querySelectorAll(".phrase-chip");
-  phraseButtons.forEach(btn => {
+  // Botones de emojis en el chat
+  const emojiButtons = document.querySelectorAll(".emoji-btn");
+  emojiButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       if (chatInput) {
-        const phrase = btn.dataset.phrase || btn.textContent;
-        chatInput.value = chatInput.value ? `${chatInput.value} ${phrase}` : phrase;
+        chatInput.value += btn.textContent;
         chatInput.focus();
       }
     });
@@ -1364,27 +1131,21 @@ function setupEventListeners() {
   const addWordForm = document.getElementById("addWordForm");
   const newWordInput = document.getElementById("newWordInput");
 
-  if (manageWordsBtn && wordsModal) {
+  if (manageWordsBtn) {
     manageWordsBtn.addEventListener("click", () => {
       renderWordPoolModal();
-      openModal(wordsModal);
+      wordsModal.classList.remove("hidden");
     });
   }
 
-  if (closeWordsModalBtn && wordsModal) {
-    closeWordsModalBtn.addEventListener("click", () => closeModal(wordsModal));
+  if (closeWordsModalBtn) {
+    closeWordsModalBtn.addEventListener("click", () => wordsModal.classList.add("hidden"));
   }
 
-  if (wordsModal) {
-    wordsModal.addEventListener("click", (e) => {
-      if (e.target === wordsModal) closeModal(wordsModal);
-    });
-  }
-
-  if (applyWordsBtn && wordsModal) {
+  if (applyWordsBtn) {
     applyWordsBtn.addEventListener("click", () => {
-      closeModal(wordsModal);
-      generateNewCard(false);
+      wordsModal.classList.add("hidden");
+      generateNewCard();
     });
   }
 
@@ -1413,26 +1174,20 @@ function setupEventListeners() {
   const continuePlayingBtn = document.getElementById("continuePlayingBtn");
   const winShareBtn = document.getElementById("winShareBtn");
 
-  if (continuePlayingBtn && winModal) {
-    continuePlayingBtn.addEventListener("click", () => closeModal(winModal));
+  if (continuePlayingBtn) {
+    continuePlayingBtn.addEventListener("click", () => winModal.classList.add("hidden"));
   }
 
-  if (winShareBtn && winModal) {
+  if (winShareBtn) {
     winShareBtn.addEventListener("click", () => {
-      closeModal(winModal);
-      shareResults();
-    });
-  }
-
-  if (winModal) {
-    winModal.addEventListener("click", (e) => {
-      if (e.target === winModal) closeModal(winModal);
+      winModal.classList.add("hidden");
+      copyShareResults();
     });
   }
 
   const shareResultBtn = document.getElementById("shareResultBtn");
   if (shareResultBtn) {
-    shareResultBtn.addEventListener("click", shareResults);
+    shareResultBtn.addEventListener("click", copyShareResults);
   }
 
   // Controles de Apertura / Cierre de Enlace Público (Cloudflare)
@@ -1448,7 +1203,7 @@ function setupEventListeners() {
       if (input && input.value) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(input.value).then(() => {
-            showToast("Enlace copiado. Pásaselo a tus amigos.", "success");
+            showToast("📋 ¡Enlace copiado! Pásaselo a tus amigos por WhatsApp");
           }).catch(() => {
             prompt("Copia el enlace para tus amigos:", input.value);
           });
@@ -1463,18 +1218,18 @@ function setupEventListeners() {
   const gitPullBtn = document.getElementById("gitPullBtn");
   if (gitPullBtn) {
     gitPullBtn.addEventListener("click", async () => {
-      showToast("Ejecutando git pull...", "info");
+      showToast("🔄 Ejecutando git pull...");
       gitPullBtn.disabled = true;
       try {
         const res = await fetch('/api/git/pull', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast(`Git pull: ${data.message}`, "success");
+          showToast(`✅ Git Pull: ${data.message}`);
         } else {
-          showToast(data.message, "error");
+          showToast(`⚠️ ${data.message}`);
         }
       } catch (err) {
-        showToast("Error al conectar con el servidor para git pull", "error");
+        showToast("⚠️ Error al conectar con el servidor para git pull");
       } finally {
         gitPullBtn.disabled = false;
       }
@@ -1491,19 +1246,18 @@ function setupEventListeners() {
 }
 
 function closeModals() {
-  document.querySelectorAll("dialog[open]").forEach(dialog => closeModal(dialog));
-  toggleChat(false);
+  document.getElementById("wordsModal")?.classList.add("hidden");
+  document.getElementById("winModal")?.classList.add("hidden");
+  document.getElementById("roomModal")?.classList.add("hidden");
+  document.getElementById("chatDrawer")?.classList.add("hidden");
+  AppState.chatOpen = false;
 }
 
 function updateSoundButtonUI() {
   const btn = document.getElementById("soundToggleBtn");
   if (btn) {
-    btn.innerHTML = `
-      ${icon(AppState.soundEnabled ? "volume-on" : "volume-off")}
-      <span class="visually-hidden">${AppState.soundEnabled ? "Silenciar sonido" : "Activar sonido"}</span>
-    `;
-    btn.setAttribute("aria-pressed", AppState.soundEnabled ? "true" : "false");
-    btn.title = AppState.soundEnabled ? "Sonido activado" : "Sonido silenciado";
+    btn.textContent = AppState.soundEnabled ? "🔊" : "🔇";
+    btn.title = AppState.soundEnabled ? "Sonido activado" : "Silenciado";
   }
 }
 
