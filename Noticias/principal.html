@@ -3,30 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>¿Sobre quién te quieres informar hoy? - Crónicas & Actualidad</title>
+  <meta name="description" content="El Diario de Investigación: reportajes y crónicas satíricas escritas por la clase.">
+  <meta name="theme-color" content="#161d33">
+  <title>El Diario de Investigación - Portada</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
   <!-- Barra superior estilo periódico -->
   <div class="newspaper-top-bar">
-    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-      <a href="../index.html" style="color: #fbbf24; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-        <span>&larr;</span> 🎯 Volver al Bingo del Profe
+    <div class="top-bar-nav">
+      <a href="../index.html" class="top-bar-back">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+        Volver al Bingo del Profe
       </a>
-      <button id="gitPullNewsBtn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">
-        🔄 Sincronizar Noticias (Git Pull)
+      <button id="gitPullNewsBtn" class="top-bar-sync" type="button">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3.5V9h-5.5"/></svg>
+        Sincronizar noticias
       </button>
+      <span id="syncStatus" class="visually-hidden" role="status" aria-live="polite"></span>
     </div>
     <div class="top-bar-trending">
-      <span class="trending-badge">ÚLTIMA HORA</span>
-      <span>Debates, sucesos y declaraciones virales</span>
+      <span class="trending-badge">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 21V4"/><path d="M5.5 4.5h12.6l-2.8 4 2.8 4H5.5"/></svg>
+        Última hora
+      </span>
+      <span id="todayDate">Debates, sucesos y declaraciones virales</span>
     </div>
   </div>
 
   <!-- Cabecera de la publicación -->
   <header class="editorial-header">
-    <h1 class="masthead-title">EL DIARIO DE INVESTIGACIÓN</h1>
+    <h1 class="masthead-title">El Diario de Investigación</h1>
+    <div class="masthead-rules" aria-hidden="true"></div>
     <p class="masthead-subtitle">Actualidad exclusiva, reportajes profundos y testimonios de interés social</p>
   </header>
 
@@ -35,32 +45,52 @@
     <h2 class="section-headline">¿Sobre quién te quieres informar hoy?</h2>
 
     <div class="news-grid">
-      <!-- Tarjeta Cabene05 -->
-      <article class="news-card">
-        <a href="cabene05/prueba.html" class="news-image-wrapper">
-          <span class="news-badge badge-youtube">🔴 Gurú de YouTube</span>
-          <img src="cabene05/accidente.jpg" alt="Accidente Cabene05" loading="lazy">
+      <!-- Reportaje principal: Cabene05 -->
+      <article class="news-card featured">
+        <a href="cabene05/index.html" class="news-image-wrapper" aria-label="Leer el reportaje sobre Cabene05">
+          <span class="news-badge badge-youtube">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="12.5" rx="2"/><path d="M8.5 3.5 12 7l3.5-3.5"/></svg>
+            Gurú de YouTube
+          </span>
+          <img src="cabene05/accidente.jpg" alt="Imagen del incidente atribuido a Cabene05" loading="lazy">
         </a>
         <div class="news-body">
-          <p class="news-title">El ídolo de masas / gurú de YouTube / El Graaan Cabene05</p>
+          <span class="news-kicker">Reportaje · Cabene05</span>
+          <p class="news-title">El ídolo de masas: el Graaan Cabene05</p>
+          <p class="news-excerpt">Quién financia su canal, qué figuras lo rodean y los incidentes que han marcado su trayectoria reciente. Un expediente abierto por la redacción.</p>
           <div class="news-footer">
-            <span class="news-read-time">⏱️ 3 min de lectura</span>
-            <a href="cabene05/prueba.html" class="btn-read-more">Leer reportaje <span>&rarr;</span></a>
+            <span class="news-read-time">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+              3 min de lectura
+            </span>
+            <a href="cabene05/index.html" class="btn-read-more">Leer reportaje
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            </a>
           </div>
         </div>
       </article>
 
-      <!-- Tarjeta Mason -->
+      <!-- Reportaje secundario: Mason -->
       <article class="news-card">
-        <a href="mason(feria)/EliteMasonica.html" class="news-image-wrapper">
-          <span class="news-badge badge-mason">🏛️ Élite Masónica</span>
-          <img src="mason(feria)/mason.jpg" alt="Mason Enrique Feria" loading="lazy">
+        <a href="mason-feria/elite-masonica.html" class="news-image-wrapper" aria-label="Leer las declaraciones de Don Enrique Feria">
+          <span class="news-badge badge-mason">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21v-9"/><path d="M9.5 21v-9"/><path d="M14.5 21v-9"/><path d="M19 21v-9"/><path d="M12 3 3.5 8.5h17z"/></svg>
+            Élite masónica
+          </span>
+          <img src="mason-feria/mason.jpg" alt="Retrato de Enrique Feria" loading="lazy">
         </a>
         <div class="news-body">
-          <p class="news-title">El Gran MASON (Enrique Feria)</p>
+          <span class="news-kicker">Crónica · Tertulia trianera</span>
+          <p class="news-title">El Gran Mason: Don Enrique Feria</p>
+          <p class="news-excerpt">Antología canónica de las frases más memorables del trianero ilustre, recopiladas por los cronistas de la clase.</p>
           <div class="news-footer">
-            <span class="news-read-time">⏱️ 2 min de lectura</span>
-            <a href="mason(feria)/EliteMasonica.html" class="btn-read-more">Ver declaraciones <span>&rarr;</span></a>
+            <span class="news-read-time">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+              2 min de lectura
+            </span>
+            <a href="mason-feria/elite-masonica.html" class="btn-read-more">Ver declaraciones
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            </a>
           </div>
         </div>
       </article>
@@ -68,30 +98,43 @@
   </main>
 
   <footer class="newspaper-footer">
-    <p>© 2026 El Diario de Investigación • Portal de Noticias y Crónicas Exclusivas</p>
+    <p>© 2026 El Diario de Investigación · Publicación colaborativa de la clase</p>
   </footer>
 
   <script>
-    const gitPullBtn = document.getElementById('gitPullNewsBtn');
-    if (gitPullBtn) {
-      gitPullBtn.addEventListener('click', async () => {
-        gitPullBtn.textContent = '🔄 Sincronizando...';
-        gitPullBtn.disabled = true;
-        try {
-          const res = await fetch('/api/git/pull', { method: 'POST' });
-          const data = await res.json();
-          alert(data.success ? ('✅ Git Pull: ' + data.message) : ('⚠️ ' + data.message));
-          if (data.success) {
-            window.location.reload();
+    (function () {
+      // Fecha real en la barra superior (refuerza el aire de periódico)
+      var dateEl = document.getElementById('todayDate');
+      if (dateEl) {
+        var fecha = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        dateEl.textContent = 'Debates, sucesos y declaraciones virales · ' + fecha.charAt(0).toUpperCase() + fecha.slice(1);
+      }
+
+      // Sincronización con GitHub sin ventanas de alerta
+      var gitPullBtn = document.getElementById('gitPullNewsBtn');
+      var syncStatus = document.getElementById('syncStatus');
+      if (gitPullBtn) {
+        gitPullBtn.addEventListener('click', async function () {
+          var original = gitPullBtn.innerHTML;
+          gitPullBtn.disabled = true;
+          gitPullBtn.textContent = 'Sincronizando...';
+          if (syncStatus) syncStatus.textContent = 'Sincronizando noticias con GitHub...';
+          try {
+            var res = await fetch('/api/git/pull', { method: 'POST' });
+            var data = await res.json();
+            if (syncStatus) syncStatus.textContent = data.success ? 'Noticias actualizadas. Recargando...' : data.message;
+            if (data.success) {
+              setTimeout(function () { window.location.reload(); }, 900);
+            }
+          } catch (e) {
+            if (syncStatus) syncStatus.textContent = 'No se pudo conectar con el servidor del juego.';
+          } finally {
+            gitPullBtn.innerHTML = original;
+            gitPullBtn.disabled = false;
           }
-        } catch (e) {
-          alert('⚠️ Error al conectar con el servidor.');
-        } finally {
-          gitPullBtn.textContent = '🔄 Sincronizar Noticias (Git Pull)';
-          gitPullBtn.disabled = false;
-        }
-      });
-    }
+        });
+      }
+    })();
   </script>
 </body>
 </html>

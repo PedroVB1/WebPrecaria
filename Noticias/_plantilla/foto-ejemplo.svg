@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Imagen de ejemplo">
+  <rect width="1200" height="630" fill="#eef0f4"/>
+  <g stroke="#b6bdcb" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(555,255)">
+    <rect x="15" y="30" width="60" height="45" rx="8"/>
+    <path d="M30 15h30l8 15"/>
+    <circle cx="45" cy="52" r="12"/>
+  </g>
+  <text x="600" y="380" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#8a93a6">Sustituye esta imagen por tu foto.jpg</text>
+</svg>

@@ -47,7 +47,7 @@ function startCloudflareTunnel() {
     tunnelState.error = null;
     broadcastTunnelStatus();
 
-    console.log("🚀 Iniciando túnel seguro de Cloudflare...");
+    console.log("Iniciando túnel seguro de Cloudflare...");
 
     try {
       // Spawn cloudflared tunnel
@@ -76,7 +76,7 @@ function startCloudflareTunnel() {
           tunnelState.active = true;
           tunnelState.starting = false;
           tunnelState.url = match[0];
-          console.log(`✅ Túnel activo: ${tunnelState.url}`);
+          console.log(`Túnel activo: ${tunnelState.url}`);
           broadcastTunnelStatus();
           resolve(tunnelState.url);
         }
@@ -127,7 +127,7 @@ function stopCloudflareTunnel() {
       return resolve(true);
     }
 
-    console.log("🛑 Deteniendo túnel de Cloudflare...");
+    console.log("Deteniendo túnel de Cloudflare...");
     const pid = tunnelProcess.pid;
     tunnelProcess = null;
 
@@ -222,8 +222,8 @@ io.on('connection', (socket) => {
 
   // Unirse a una sala
   socket.on('join_room', ({ room, nickname }) => {
-    const cleanRoom = (room || 'CLASE').trim().toUpperCase();
-    const cleanNick = (nickname || 'Anónimo').trim().slice(0, 20);
+    const cleanRoom = sanitizeRoomCode(room) || 'CLASE';
+    const cleanNick = sanitizeNickname(nickname) || 'Anónimo';
 
     if (currentRoom && rooms[currentRoom]) {
       socket.leave(currentRoom);
@@ -255,7 +255,7 @@ io.on('connection', (socket) => {
 
     const joinMsg = {
       type: 'system',
-      text: `👋 ${currentNickname} se ha unido a la sala`,
+      text: `${currentNickname} se ha unido a la sala`,
       time: getCurrentTime()
     };
     addMessageToHistory(currentRoom, joinMsg);
@@ -265,7 +265,7 @@ io.on('connection', (socket) => {
   // Mensaje de chat
   socket.on('send_message', ({ text }) => {
     if (!currentRoom || !text) return;
-    const cleanText = text.trim().slice(0, 300);
+    const cleanText = sanitizeText(text).slice(0, 300);
     if (!cleanText) return;
 
     const chatMsg = {
@@ -282,10 +282,12 @@ io.on('connection', (socket) => {
   // Palabra marcada
   socket.on('cell_marked', ({ word, count, total }) => {
     if (!currentRoom) return;
+    const cleanWord = sanitizeText(word).slice(0, 60);
+    if (!cleanWord) return;
 
     const eventMsg = {
       type: 'game_event',
-      text: `⚡ ${currentNickname} cazó "${word}" (${count}/${total})`,
+      text: `${currentNickname} cazó "${cleanWord}" (${Number(count) || 0}/${Number(total) || 0})`,
       time: getCurrentTime()
     };
 
@@ -296,10 +298,11 @@ io.on('connection', (socket) => {
   // Notificación de BINGO
   socket.on('player_bingo', ({ reason }) => {
     if (!currentRoom) return;
+    const cleanReason = sanitizeText(reason).slice(0, 60) || 'línea completada';
 
     const bingoMsg = {
       type: 'bingo_alert',
-      text: `🚨 ¡¡${currentNickname.toUpperCase()} HA CANTADO BINGO!! (${reason}) 🏆🎉`,
+      text: `${currentNickname} ha cantado BINGO: ${cleanReason}`,
       time: getCurrentTime()
     };
 
@@ -316,7 +319,7 @@ io.on('connection', (socket) => {
 
       const leaveMsg = {
         type: 'system',
-        text: `🚪 ${currentNickname || 'Un jugador'} ha salido`,
+        text: `${currentNickname || 'Un jugador'} ha salido de la sala`,
         time: getCurrentTime()
       };
       addMessageToHistory(currentRoom, leaveMsg);
@@ -328,6 +331,25 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// Los mensajes se escapan también en el cliente; aquí se limpia el texto
+// para impedir que etiquetas HTML o caracteres de control entren en la sala.
+function sanitizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sanitizeNickname(value) {
+  return sanitizeText(value).slice(0, 20);
+}
+
+function sanitizeRoomCode(value) {
+  return sanitizeText(value).toUpperCase().replace(/[^A-Z0-9ÁÉÍÓÚÑ_-]/g, '').slice(0, 12);
+}
 
 function addMessageToHistory(room, msg) {
   if (rooms[room]) {
@@ -345,8 +367,8 @@ function getCurrentTime() {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n==================================================`);
-  console.log(`🎮 SERVIDOR BINGO DEL PROFE INICIADO CON ÉXITO!`);
-  console.log(`👉 Acceso local: http://localhost:${PORT}`);
-  console.log(`🛡️ Control de enlace público para amigos integrado`);
+  console.log(`SERVIDOR BINGO DEL PROFE INICIADO`);
+  console.log(`Acceso local: http://localhost:${PORT}`);
+  console.log(`Control de enlace público para amigos integrado`);
   console.log(`==================================================\n`);
 });
