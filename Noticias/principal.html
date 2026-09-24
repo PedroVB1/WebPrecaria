@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Sobre quién te quieres informar hoy? - Crónicas & Actualidad</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Barra superior estilo periódico -->
+  <div class="newspaper-top-bar">
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <a href="../index.html" style="color: #fbbf24; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        <span>&larr;</span> 🎯 Volver al Bingo del Profe
+      </a>
+      <button id="gitPullNewsBtn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">
+        🔄 Sincronizar Noticias (Git Pull)
+      </button>
+    </div>
+    <div class="top-bar-trending">
+      <span class="trending-badge">ÚLTIMA HORA</span>
+      <span>Debates, sucesos y declaraciones virales</span>
+    </div>
+  </div>
+
+  <!-- Cabecera de la publicación -->
+  <header class="editorial-header">
+    <h1 class="masthead-title">EL DIARIO DE INVESTIGACIÓN</h1>
+    <p class="masthead-subtitle">Actualidad exclusiva, reportajes profundos y testimonios de interés social</p>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="main-container">
+    <h2 class="section-headline">¿Sobre quién te quieres informar hoy?</h2>
+
+    <div class="news-grid">
+      <!-- Tarjeta Cabene05 -->
+      <article class="news-card">
+        <a href="cabene05/prueba.html" class="news-image-wrapper">
+          <span class="news-badge badge-youtube">🔴 Gurú de YouTube</span>
+          <img src="cabene05/accidente.jpg" alt="Accidente Cabene05" loading="lazy">
+        </a>
+        <div class="news-body">
+          <p class="news-title">El ídolo de masas / gurú de YouTube / El Graaan Cabene05</p>
+          <div class="news-footer">
+            <span class="news-read-time">⏱️ 3 min de lectura</span>
+            <a href="cabene05/prueba.html" class="btn-read-more">Leer reportaje <span>&rarr;</span></a>
+          </div>
+        </div>
+      </article>
+
+      <!-- Tarjeta Mason -->
+      <article class="news-card">
+        <a href="mason(feria)/EliteMasonica.html" class="news-image-wrapper">
+          <span class="news-badge badge-mason">🏛️ Élite Masónica</span>
+          <img src="mason(feria)/mason.jpg" alt="Mason Enrique Feria" loading="lazy">
+        </a>
+        <div class="news-body">
+          <p class="news-title">El Gran MASON (Enrique Feria)</p>
+          <div class="news-footer">
+            <span class="news-read-time">⏱️ 2 min de lectura</span>
+            <a href="mason(feria)/EliteMasonica.html" class="btn-read-more">Ver declaraciones <span>&rarr;</span></a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="newspaper-footer">
+    <p>© 2026 El Diario de Investigación • Portal de Noticias y Crónicas Exclusivas</p>
+  </footer>
+
+  <script>
+    const gitPullBtn = document.getElementById('gitPullNewsBtn');
+    if (gitPullBtn) {
+      gitPullBtn.addEventListener('click', async () => {
+        gitPullBtn.textContent = '🔄 Sincronizando...';
+        gitPullBtn.disabled = true;
+        try {
+          const res = await fetch('/api/git/pull', { method: 'POST' });
+          const data = await res.json();
+          alert(data.success ? ('✅ Git Pull: ' + data.message) : ('⚠️ ' + data.message));
+          if (data.success) {
+            window.location.reload();
+          }
+        } catch (e) {
+          alert('⚠️ Error al conectar con el servidor.');
+        } finally {
+          gitPullBtn.textContent = '🔄 Sincronizar Noticias (Git Pull)';
+          gitPullBtn.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

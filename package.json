@@ -1,0 +1,13 @@
+{
+  "name": "bingo-del-profe",
+  "version": "1.0.0",
+  "description": "Bingo interactivo de palabras coloquiales para clase con modo multijugador y chat en tiempo real",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}

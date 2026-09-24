@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bingo del Profe - Edición Expresiones Latinas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- MODO CAMUFLAJE (Para cuando el profe se acerca) -->
+  <div id="stealthScreen" class="stealth-screen hidden">
+    <div class="stealth-header">
+      <div class="stealth-doc-title">📄 Apuntes_Clase_Tema_4_Metodologia.docx</div>
+      <button id="exitStealthBtn" class="stealth-exit-btn" title="Volver al Bingo">✕ Salir de Modo Apuntes (ESC)</button>
+    </div>
+    <div class="stealth-content">
+      <h2>1. Fundamentos y Marco Teórico</h2>
+      <p>En el análisis contemporáneo de los procesos evaluativos, se observa una correlación directa entre la exposición sistemática a variables dialectales y la retención cognitiva de los alumnos.</p>
+      <h3>1.1 Hipótesis de Interacción</h3>
+      <ul>
+        <li>Optimización de los intervalos de atención mediante escucha activa focalizada.</li>
+        <li>Identificación de patrones léxicos recurrentes en el discurso magistral del docente.</li>
+        <li>Consolidación de métricas de rendimiento en matrices bidimensionales tipo cuadrícula.</li>
+      </ul>
+      <div class="stealth-code-block">
+        <code>function calcularAtencion(escucha, docencia) { return escucha * docencia; }</code>
+      </div>
+      <p class="stealth-tip"><em>Presiona ESC o haz doble clic para regresar al Bingo rápidamente.</em></p>
+    </div>
+  </div>
+
+  <!-- APLICACIÓN PRINCIPAL -->
+  <div id="mainApp" class="app-container">
+    <header class="app-header">
+      <div class="header-badge">🎯 El juego de la clase</div>
+      <h1 class="app-title">Bingo del Profe</h1>
+      <p class="app-subtitle">Caza las expresiones latinas de tu profesor y compite en directo con tus amigos.</p>
+      
+      <div class="top-controls">
+        <button id="stealthBtn" class="btn btn-warning btn-sm" title="Disimula rápidamente si el profe se acerca">
+          🤫 ¡Viene el Profe! (F2 / Esc)
+        </button>
+        <button id="soundToggleBtn" class="btn btn-icon" title="Activar/Silenciar sonido">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- BARRA DE SALA MULTIJUGADOR -->
+    <section class="multiplayer-bar">
+      <div class="multiplayer-status" id="multiplayerStatus">
+        <span class="status-dot offline" id="statusDot"></span>
+        <span id="statusText">Modo Solitario</span>
+        <span id="roomUsersBadge" class="users-badge hidden">👥 <span id="onlineCount">0</span> en sala</span>
+      </div>
+      <button id="openRoomModalBtn" class="btn btn-secondary btn-sm">
+        🌐 Unirse a Sala / Conectar
+      </button>
+    </section>
+
+    <!-- PANEL DE CONTROL DE ENLACE PÚBLICO (ABRIR / CERRAR PARA AMIGOS) -->
+    <section class="tunnel-card" id="tunnelCard">
+      <div class="tunnel-header-row">
+        <div class="tunnel-status-info">
+          <span id="tunnelBadge" class="tunnel-badge local">🔒 Solo Local (Privado)</span>
+          <span id="tunnelDetail" class="tunnel-detail">Solo tú puedes jugar en este equipo</span>
+        </div>
+        <button id="toggleTunnelBtn" class="btn btn-tunnel-start">
+          🚀 Abrir Enlace para Amigos
+        </button>
+      </div>
+      <!-- Caja de enlace activo -->
+      <div id="tunnelLinkRow" class="tunnel-link-row hidden">
+        <span class="tunnel-link-tag">Enlace Cloudflare seguro:</span>
+        <div class="tunnel-input-wrapper">
+          <input type="text" id="tunnelUrlInput" readonly value="" placeholder="Generando enlace..." />
+          <button id="copyTunnelBtn" class="btn btn-primary btn-sm">📋 Copiar para WhatsApp</button>
+          <a id="openTunnelLink" href="#" target="_blank" class="btn btn-secondary btn-sm" title="Probar enlace">🔗 Abrir</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- BARRA DE ESTADO / ACCIONES -->
+    <section class="game-dashboard">
+      <div class="stats-panel">
+        <div class="stat-pill">
+          <span class="stat-label">Marcadas:</span>
+          <span id="markedCount" class="stat-value">0</span> / <span id="totalCells">16</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Líneas logradas:</span>
+          <span id="completedLines" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <div class="grid-size-selector">
+          <label for="gridSizeSelect">Cuadrícula:</label>
+          <select id="gridSizeSelect" class="custom-select">
+            <option value="4" selected>4 x 4 (Rápido)</option>
+            <option value="5">5 x 5 (Clásico con Centro Libre)</option>
+            <option value="3">3 x 3 (Mini Express)</option>
+          </select>
+        </div>
+        <button id="newCardBtn" class="btn btn-secondary">
+          🎲 Barajar Cartón
+        </button>
+        <button id="resetBoardBtn" class="btn btn-outline">
+          🧹 Limpiar Marcas
+        </button>
+        <button id="manageWordsBtn" class="btn btn-primary">
+          ✏️ Palabras (<span id="totalWordPoolCount">0</span>)
+        </button>
+      </div>
+    </section>
+
+    <!-- TABLERO DE BINGO -->
+    <main class="bingo-wrapper">
+      <div id="bingoGrid" class="bingo-grid grid-4" role="grid" aria-label="Cartón de Bingo">
+        <!-- Generado dinámicamente con JS -->
+      </div>
+    </main>
+
+    <!-- PIE Y EXTRAS -->
+    <footer class="app-footer">
+      <p>💡 Tip: Pulsa <strong>F2</strong> o <strong>ESC</strong> en cualquier momento si el profesor se te queda mirando.</p>
+      <div class="footer-actions">
+        <button id="shareResultBtn" class="btn btn-sm btn-ghost">📋 Copiar resumen para WhatsApp</button>
+        <button id="gitPullBtn" class="btn btn-sm btn-ghost" title="Descargar noticias nuevas subidas por tus amigos a GitHub">
+          🔄 Sincronizar con GitHub (Git Pull)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BOTÓN FLOTANTE DE NOTICIAS (ABAJO A LA IZQUIERDA) -->
+  <a href="noticias/principal.html" id="newsFloatingBtn" class="news-floating-btn" title="Ir al portal de noticias">
+    <span class="news-btn-icon">📰</span>
+    <span class="news-btn-label">Noticias</span>
+  </a>
+
+  <!-- BOTÓN FLOTANTE DEL CHAT (ABAJO A LA DERECHA) -->
+  <button id="chatToggleBtn" class="chat-floating-btn" title="Abrir Chat con amigos">
+    <span class="chat-btn-icon">💬</span>
+    <span class="chat-btn-label">Chat en Vivo</span>
+    <span id="chatUnreadBadge" class="chat-badge hidden">0</span>
+  </button>
+
+  <!-- PANEL / DRAWER DEL CHAT EN VIVO -->
+  <div id="chatDrawer" class="chat-drawer hidden">
+    <div class="chat-header">
+      <div class="chat-header-title">
+        <span>💬 Chat de Clase</span>
+        <span id="chatRoomName" class="chat-room-tag">General</span>
+      </div>
+      <button id="closeChatBtn" class="chat-close-btn">&times;</button>
+    </div>
+
+    <!-- Lista de participantes conectados -->
+    <div class="chat-online-bar">
+      <span class="online-label">En línea:</span>
+      <span id="chatOnlineList" class="online-list">Tú</span>
+    </div>
+
+    <!-- Mensajes -->
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-msg system">
+        <span>💡 Conéctate a una sala para chatear en tiempo real con tus amigos.</span>
+      </div>
+    </div>
+
+    <!-- Atajos de emojis -->
+    <div class="chat-emoji-bar">
+      <button class="emoji-btn" type="button">😂</button>
+      <button class="emoji-btn" type="button">🤫</button>
+      <button class="emoji-btn" type="button">🎯</button>
+      <button class="emoji-btn" type="button">🚨</button>
+      <button class="emoji-btn" type="button">🔥</button>
+      <button class="emoji-btn" type="button">👀</button>
+    </div>
+
+    <!-- Formulario de envío -->
+    <form id="chatForm" class="chat-input-form">
+      <input 
+        type="text" 
+        id="chatInput" 
+        placeholder="Escribe algo al grupo..." 
+        maxlength="200" 
+        autocomplete="off"
+      />
+      <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
+    </form>
+  </div>
+
+  <!-- MODAL DE CONEXIÓN A SALA MULTIJUGADOR -->
+  <div id="roomModal" class="modal-backdrop hidden">
+    <div class="modal-card room-modal">
+      <div class="modal-header">
+        <h3>🌐 Sala Multijugador</h3>
+        <button id="closeRoomModalBtn" class="close-btn">&times;</button>
+      </div>
+      <p class="modal-info">
+        Introduce tu apodo y el código de la sala que acordéis en clase (ej: <strong>CLASE</strong>). Todos los que pongan el mismo código compartirán el chat y verán los avisos de BINGO.
+      </p>
+
+      <form id="joinRoomForm" class="join-room-form">
+        <div class="form-group">
+          <label for="nicknameInput">Tu Apodo / Nombre:</label>
+          <input 
+            type="text" 
+            id="nicknameInput" 
+            placeholder="Ej: Pedro, El_Crack, Juan..." 
+            maxlength="15" 
+            required 
+            autocomplete="nickname"
+          />
+        </div>
+        <div class="form-group">
+          <label for="roomCodeInput">Código de Sala:</label>
+          <input 
+            type="text" 
+            id="roomCodeInput" 
+            placeholder="Ej: CLASE101" 
+            maxlength="12" 
+            style="text-transform: uppercase;"
+            required 
+          />
+        </div>
+        <button type="submit" class="btn btn-primary w-full">¡Entrar a la Sala y Activar Chat!</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE BINGO GANADO -->
+  <div id="winModal" class="modal-backdrop hidden">
+    <div class="modal-card win-modal">
+      <div class="win-trophy">🏆🎉</div>
+      <h2 class="win-title">¡¡BIIINGO!!</h2>
+      <p id="winDescription" class="win-desc">¡Completaste una línea del profesor!</p>
+      <div class="win-details" id="winDetails"></div>
+      <div class="modal-actions">
+        <button id="continuePlayingBtn" class="btn btn-secondary">Seguir Cazando Palabras</button>
+        <button id="winShareBtn" class="btn btn-primary">📤 Compartir Victoria</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GESTOR DE PALABRAS -->
+  <div id="wordsModal" class="modal-backdrop hidden">
+    <div class="modal-card words-manager-modal">
+      <div class="modal-header">
+        <h3>Diccionario de Expresiones del Profe</h3>
+        <button id="closeWordsModalBtn" class="close-btn">&times;</button>
+      </div>
+      <p class="modal-info">
+        Añade las expresiones exactas que repite tu profesor o elimina las que nunca dice. El cartón se baraja aleatoriamente de esta lista.
+      </p>
+
+      <form id="addWordForm" class="add-word-form">
+        <input 
+          type="text" 
+          id="newWordInput" 
+          placeholder="Ej: Ahorita, Chamo, De una, No mames..." 
+          maxlength="50" 
+          required 
+          autocomplete="off"
+        />
+        <button type="submit" class="btn btn-primary">+ Añadir</button>
+      </form>
+
+      <div class="tags-container-header">
+        <span>Palabras activas (<span id="modalWordsCount">0</span>)</span>
+        <button id="resetDefaultsBtn" class="btn btn-link">Restablecer lista por defecto</button>
+      </div>
+
+      <div id="wordsList" class="words-pill-list">
+        <!-- Renderizado dinámico -->
+      </div>
+
+      <div class="modal-footer">
+        <button id="applyWordsBtn" class="btn btn-primary w-full">Guardar y Generar Nuevo Cartón</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- CANVAS PARA CONFETI -->
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <!-- SOCKET.IO CLIENT (Cargado desde el servidor de Node o CDN como fallback) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
